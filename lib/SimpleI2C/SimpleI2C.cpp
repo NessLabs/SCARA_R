@@ -11,13 +11,14 @@ void SimpleI2C::setup(uint8_t device_address, uint32_t freq, uint8_t sda_pin, ui
     if (!_i2c_initialized)
     {
         i2c_master_bus_config_t conf;
-        conf.clk_source = I2C_CLK_SRC_RC_FAST;
+        conf.clk_source = I2C_CLK_SRC_DEFAULT;
         conf.scl_io_num = (gpio_num_t)scl_pin;
         conf.sda_io_num = (gpio_num_t)sda_pin;
         conf.i2c_port = i2c_num;
         conf.glitch_ignore_cnt = 7;
         conf.flags.enable_internal_pullup = false;
         conf.intr_priority = 0;
+        conf.trans_queue_depth = 0;
         ESP_ERROR_CHECK(i2c_new_master_bus(&conf, &_bus_handle));
         _i2c_initialized = true;
         ESP_LOGI("I2C ", "Master bus initialized\n");

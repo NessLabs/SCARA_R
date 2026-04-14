@@ -18,7 +18,7 @@ public:
     void enable();
     void disable();
 
-    // Set desired position in degrees
+    // Set desired position in degrees — automatically enables motor
     void setTarget(float angleDeg);
 
     // Pulse one step toward target — call at fixed rate from timer

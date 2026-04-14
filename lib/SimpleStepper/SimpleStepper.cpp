@@ -30,27 +30,33 @@ void SimpleStepper::disable() { gpio_set_level(_en_pin, 1); }
 void SimpleStepper::setTarget(float angleDeg)
 {
     _target_steps = degreesToSteps(angleDeg);
+    if (_current_steps != _target_steps)
+        enable();  // wake up motor only if there's somewhere to go
 }
 
 void SimpleStepper::update()
 {
-    if (_current_steps == _target_steps) return;
+    if (_current_steps == _target_steps)
+    {
+        disable();  // target reached — cut power to avoid heating
+        return;
+    }
 
     // Set direction
     if (_target_steps > _current_steps)
     {
         gpio_set_level(_dir_pin, 1);
-        _current_steps++;
+        _current_steps = _current_steps + 1;
     }
     else
     {
         gpio_set_level(_dir_pin, 0);
-        _current_steps--;
+        _current_steps = _current_steps - 1;
     }
 
     // Pulse step pin
     gpio_set_level(_step_pin, 1);
-    ets_delay_us(5);          // minimum pulse width (~2us, 5us to be safe)
+    ets_delay_us(5);
     gpio_set_level(_step_pin, 0);
 }
 
