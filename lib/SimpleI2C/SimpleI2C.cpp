@@ -16,9 +16,10 @@ void SimpleI2C::setup(uint8_t device_address, uint32_t freq, uint8_t sda_pin, ui
         conf.sda_io_num = (gpio_num_t)sda_pin;
         conf.i2c_port = i2c_num;
         conf.glitch_ignore_cnt = 7;
-        conf.flags.enable_internal_pullup = false;
         conf.intr_priority = 0;
         conf.trans_queue_depth = 0;
+        conf.flags.enable_internal_pullup = false;
+        conf.flags.allow_pd               = false;  // disable power down — add this
         ESP_ERROR_CHECK(i2c_new_master_bus(&conf, &_bus_handle));
         _i2c_initialized = true;
         ESP_LOGI("I2C ", "Master bus initialized\n");

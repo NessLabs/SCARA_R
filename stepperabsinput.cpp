@@ -1,4 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -8,9 +13,9 @@
 
 static const char* TAG = "StepperTest";
 
-#define STEP_PIN    25
-#define DIR_PIN     26
-#define EN_PIN      27
+#define STEP_PIN    5 //25  
+#define DIR_PIN     18 //26
+#define EN_PIN      33 //27
 #define SDA_PIN     21
 #define SCL_PIN     22
 
@@ -83,17 +88,46 @@ extern "C" void app_main()
     xTaskCreate(encoderTask, "encoder", 2048, NULL, 4, NULL);
     vTaskDelay(pdMS_TO_TICKS(500));
 
-    ESP_LOGI(TAG, "=== Stepper Test ===");
-    moveTo(45.0f);
-    moveTo(0.0f);
-    ESP_LOGI(TAG, "=== Done ===");
+    // Configure stdin to be non-blocking so it doesn't freeze the while loop
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+
+    ESP_LOGI(TAG, "=== Stepper Serial Control Ready ===");
+    ESP_LOGI(TAG, "Type a target angle and press Enter:");
+
+    char rx_buf[32];
+    int rx_idx = 0;
+    uint32_t last_print = 0;
 
     while (true)
     {
-        ESP_LOGI(TAG, "stepper: %.2f | encoder: %.2f | diff: %.2f | magnet: %s",
-                 stepper.getAngle(), g_encAngle,
-                 stepper.getAngle() - g_encAngle,
-                 magnetStatus());
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        // 1. Check for incoming serial data
+        int c = fgetc(stdin);
+        if (c != EOF) {
+            if (c == '\n' || c == '\r') {
+                if (rx_idx > 0) {
+                    rx_buf[rx_idx] = '\0';            // Null-terminate the string
+                    float target_deg = atof(rx_buf);  // Convert to float
+                    rx_idx = 0;                       // Reset buffer index for next input
+                    
+                    ESP_LOGI(TAG, "Input received: %.2f", target_deg);
+                    moveTo(target_deg);               // Move the motor
+                }
+            } else if (rx_idx < sizeof(rx_buf) - 1) {
+                rx_buf[rx_idx++] = c;                 // Store character
+            }
+        }
+
+        // 2. Print status every 1000 ms
+        uint32_t current_time = pdTICKS_TO_MS(xTaskGetTickCount());
+        if (current_time - last_print > 1000) {
+            ESP_LOGI(TAG, "stepper: %.2f | encoder: %.2f | diff: %.2f | magnet: %s",
+                     stepper.getAngle(), g_encAngle,
+                     stepper.getAngle() - g_encAngle,
+                     magnetStatus());
+            last_print = current_time;
+        }
+
+        // 3. Small delay to feed the task watchdog and allow other tasks to run
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }

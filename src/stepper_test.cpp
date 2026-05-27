@@ -7,9 +7,11 @@
 
 static const char* TAG = "StepperTest";
 
-#define STEP_PIN    25
-#define DIR_PIN     26
-#define EN_PIN      27
+
+#define STEP_PIN    5
+#define DIR_PIN     18
+#define EN_PIN      33
+
 
 #define CONTROL_HZ  100
 #define CONTROL_US  (1000000 / CONTROL_HZ)
@@ -40,8 +42,7 @@ extern "C" void app_main()
     vTaskDelay(pdMS_TO_TICKS(500));
 
     ESP_LOGI(TAG, "=== Stepper Test ===");
-    moveTo(45.0f);
-    moveTo(0);
+    moveTo(1000.0f);
     
 
     ESP_LOGI(TAG, "=== Done ===");

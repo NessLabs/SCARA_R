@@ -9,11 +9,11 @@
 static const char* TAG = "DCTest";
 
 // --- Pin Definitions ---
-#define BDC_PWM_PIN  15
+#define BDC_PWM_PIN  13
 #define BDC_IN1_PIN  14  // Logic Input 1 14
-#define BDC_IN2_PIN  23  // Logic Input 2 (Added for 3-pin bridge)
-#define BDC_ENC_A    18 
-#define BDC_ENC_B    19 
+#define BDC_IN2_PIN  27  // Logic Input 2 (Added for 3-pin bridge)
+#define BDC_ENC_A    36 
+#define BDC_ENC_B    39 
 
 // --- Control Timing ---
 #define CONTROL_HZ   100
