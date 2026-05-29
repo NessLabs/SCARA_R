@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SCARA Teach Pendant</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#e8ecf0;--surface:#f4f6f8;--card:#ffffff;
+  --border:#d0d6de;--border2:#b8c0cc;
+  --text:#1a1e26;--text2:#4a5260;--text3:#8090a4;
+  --blue:#005aab;--blue-lt:#e4eef8;--blue-dk:#003d78;
+  --green:#1a6b3c;--green-lt:#e6f4ec;
+  --red:#c0392b;--red-lt:#fde8e6;
+  --amber:#b35c00;--amber-lt:#fff3e6;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Barlow',sans-serif;
+  --cond:'Barlow Condensed',sans-serif;
+  --r:6px;--r2:10px;
+  --sh:0 1px 3px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);
+  --sh2:0 4px 14px rgba(0,0,0,.12);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Header ── */
+header{background:var(--card);border-bottom:2px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;gap:14px;flex-shrink:0;box-shadow:var(--sh)}
+.logo{width:30px;height:30px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:18px;height:18px}
+.brand{line-height:1}
+.brand-title{font-family:var(--cond);font-size:15px;font-weight:700;color:var(--blue);letter-spacing:1.5px}
+.brand-sub{font-family:var(--cond);font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase}
+.mode-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-left:6px}
+.mode-btn{padding:5px 14px;background:var(--surface);color:var(--text2);border:none;font-family:var(--cond);font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.mode-btn.active-joint{background:var(--green);color:#fff}
+.mode-btn.active-tcp{background:var(--blue);color:#fff}
+.badge{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.badge.ok{background:var(--green-lt);color:var(--green);border:1px solid #9fd4b5}
+.badge.err{background:var(--red-lt);color:var(--red);border:1px solid #f0b0aa}
+.badge.warn{background:var(--amber-lt);color:var(--amber);border:1px solid #f0c890}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+header .spacer{flex:1}
+.hbtn{padding:5px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-family:var(--cond);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;letter-spacing:.8px;transition:background .1s}
+.hbtn:hover{background:var(--border)}
+.estop-btn{padding:6px 16px;background:var(--red);border:2px solid #8b2020;border-radius:var(--r);font-family:var(--cond);font-size:13px;font-weight:700;color:#fff;cursor:pointer;letter-spacing:1px;box-shadow:0 2px 6px rgba(192,57,43,.35)}
+.estop-btn:hover{background:#a02020}
+.reset-btn{padding:6px 16px;background:#fff;border:2px solid var(--red);border-radius:var(--r);font-family:var(--cond);font-size:13px;font-weight:700;color:var(--red);cursor:pointer;letter-spacing:1px;animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ── Estop banner ── */
+.estop-banner{background:var(--red);color:#fff;text-align:center;padding:5px;font-family:var(--cond);font-size:12px;font-weight:700;letter-spacing:2px;display:none}
+.estop-banner.show{display:block}
+
+/* ── Main grid ── */
+main{flex:1;display:grid;grid-template-columns:220px 1fr 290px;gap:12px;padding:12px;min-height:0;overflow:hidden}
+
+/* ── Panel base ── */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden}
+.panel-hd{padding:7px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.panel-hd .col-dot{width:7px;height:7px;border-radius:50%}
+.panel-body{padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1}
+
+/* ── Jog buttons ── */
+.jog-section{opacity:1;transition:opacity .2s}
+.jog-section.disabled{opacity:.35;pointer-events:none}
+.sec-label{font-family:var(--cond);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;border-bottom:1px solid var(--border);padding-bottom:3px}
+.jog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.jog-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.jbtn{padding:9px 4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-family:var(--cond);font-size:13px;font-weight:600;color:var(--text);cursor:pointer;text-align:center;user-select:none;-webkit-user-select:none;transition:all .08s;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:38px;justify-content:center}
+.jbtn span.sub{font-size:9px;opacity:.6;letter-spacing:.5px}
+.jbtn:hover{background:var(--blue-lt);border-color:var(--blue)}
+.jbtn:active,.jbtn.pressing{background:var(--blue);color:#fff;border-color:var(--blue-dk);transform:scale(.95)}
+.jbtn.joint:hover{background:var(--green-lt);border-color:var(--green)}
+.jbtn.joint:active,.jbtn.joint.pressing{background:var(--green);color:#fff;border-color:#0f4a28}
+.jbtn.center-lbl{background:transparent;border-color:transparent;font-size:9px;color:var(--text3);cursor:default;font-family:var(--cond);letter-spacing:1px}
+.jbtn.center-lbl:hover{background:transparent;border-color:transparent}
+.step-row{display:flex;gap:4px;flex-wrap:wrap}
+.step-btn{padding:3px 9px;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--text2);cursor:pointer;transition:all .1s}
+.step-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.joint-jog-row{display:flex;align-items:center;gap:6px}
+.joint-jog-label{font-family:var(--cond);font-size:11px;font-weight:600;color:var(--text2);min-width:58px}
+
+/* ── Center panel ── */
+.center-col{display:flex;flex-direction:column;gap:10px;min-height:0}
+.viz-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh);overflow:hidden;flex-shrink:0}
+.stats-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh);padding:9px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat-item{text-align:center}
+.stat-lbl{font-family:var(--cond);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.stat-val{font-family:var(--mono);font-size:16px;font-weight:500;line-height:1.3;margin-top:1px}
+.fk-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:9px 14px;font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.8;flex-shrink:0}
+.fk-box .fk-title{font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:3px}
+
+/* ── Right panel ── */
+.right-col{display:flex;flex-direction:column;gap:0;min-height:0;overflow:hidden}
+.right-col .panel{flex:1;overflow:hidden}
+.val-section{padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.val-divider{border:none;border-top:1px solid var(--border)}
+.val-hd{padding:7px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.val-row{display:grid;grid-template-columns:68px 1fr 1fr 36px;gap:5px;align-items:center}
+.val-axis{font-family:var(--cond);font-size:12px;font-weight:600;color:var(--text2)}
+.val-readout{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 7px;font-family:var(--mono);font-size:12px;text-align:right}
+.val-input{background:#fff;border:1px solid var(--border2);border-radius:4px;padding:4px 7px;font-family:var(--mono);font-size:12px;text-align:right;width:100%;outline:none;transition:border-color .15s}
+.val-input:focus{border-color:var(--blue)}
+.val-unit{font-family:var(--cond);font-size:10px;color:var(--text3);text-align:right}
+.col-hdr{display:grid;grid-template-columns:68px 1fr 1fr 36px;gap:5px;margin-bottom:2px}
+.col-hdr span{font-family:var(--cond);font-size:9px;color:var(--text3);text-align:right;letter-spacing:.5px}
+.col-hdr span:first-child{text-align:left}
+.vel-row{display:grid;grid-template-columns:68px 1fr 36px;gap:5px;align-items:center;margin-top:-2px}
+.vel-bar-bg{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.vel-bar-fill{height:100%;border-radius:2px;transition:width .15s}
+.vel-val{font-family:var(--mono);font-size:9px;color:var(--text3);text-align:right}
+.send-btn{width:100%;padding:8px;border:none;border-radius:var(--r);font-family:var(--cond);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .15s;margin-top:3px}
+.send-btn.tcp{background:var(--blue);color:#fff}
+.send-btn.tcp:hover{background:var(--blue-dk)}
+.send-btn.joint{background:var(--green);color:#fff}
+.send-btn.joint:hover{background:#0f4a28}
+.send-btn:disabled{background:var(--text3);cursor:not-allowed}
+.fb{padding:5px 10px;border-radius:4px;font-family:var(--cond);font-size:11px;font-weight:600;display:none}
+.fb.ok{background:var(--green-lt);color:var(--green);border:1px solid #9fd4b5;display:block}
+.fb.err{background:var(--red-lt);color:var(--red);border:1px solid #f0b0aa;display:block}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="5" cy="13" r="3" fill="white"/>
+      <circle cx="17" cy="6" r="3" fill="white" opacity=".7"/>
+      <line x1="5" y1="13" x2="17" y2="6" stroke="white" stroke-width="2"/>
+      <line x1="17" y1="6" x2="21" y2="18" stroke="white" stroke-width="2" opacity=".7"/>
+    </svg>
+  </div>
+  <div class="brand">
+    <div class="brand-title">SCARA PENDANT</div>
+    <div class="brand-sub">4-DOF Controller</div>
+  </div>
+  <div class="mode-toggle">
+    <button class="mode-btn active-joint" id="btn-joint" onclick="setMode('joint')">Joint</button>
+    <button class="mode-btn" id="btn-tcp" onclick="setMode('tcp')">TCP</button>
+  </div>
+  <div class="badge ok" id="ws-badge"><span class="dot"></span><span id="ws-label">CONNECTED</span></div>
+  <div class="badge ok" id="robot-badge"><span class="dot"></span><span id="robot-label">READY</span></div>
+  <div class="spacer"></div>
+  <button class="hbtn" onclick="doHome()">⌂ HOME</button>
+  <button class="estop-btn" id="estop-btn" onclick="toggleEstop()">⬛ E-STOP</button>
+</header>
+
+<div class="estop-banner" id="estop-banner">⚠ EMERGENCY STOP ACTIVE — All motion halted — Click RESET E-STOP to continue</div>
+
+<!-- Main -->
+<main>
+
+  <!-- LEFT: Jog -->
+  <div class="panel">
+    <div class="panel-hd"><span class="col-dot" style="background:var(--blue)"></span>JOG CONTROLS</div>
+    <div class="panel-body">
+
+      <!-- TCP Jog -->
+      <div class="jog-section" id="tcp-jog">
+        <div class="sec-label" style="color:var(--blue)">TCP — Task Space</div>
+        <div class="sec-label">XY Plane</div>
+        <div class="jog-grid">
+          <div></div>
+          <button class="jbtn" data-axis="y" data-dir="1"><span>▲</span><span class="sub">+Y</span></button>
+          <button class="jbtn" data-axis="z" data-dir="1"><span>▲</span><span class="sub">+Z</span></button>
+          <button class="jbtn" data-axis="x" data-dir="-1"><span>◀</span><span class="sub">-X</span></button>
+          <div class="jbtn center-lbl">XYZ</div>
+          <button class="jbtn" data-axis="x" data-dir="1"><span>▶</span><span class="sub">+X</span></button>
+          <div></div>
+          <button class="jbtn" data-axis="y" data-dir="-1"><span>▼</span><span class="sub">-Y</span></button>
+          <button class="jbtn" data-axis="z" data-dir="-1"><span>▼</span><span class="sub">-Z</span></button>
+        </div>
+        <div class="sec-label" style="margin-top:6px">Rotation (α)</div>
+        <div class="jog-grid-2">
+          <button class="jbtn" data-axis="alpha" data-dir="-1"><span>↺</span><span class="sub">-Alpha</span></button>
+          <button class="jbtn" data-axis="alpha" data-dir="1"><span>↻</span><span class="sub">+Alpha</span></button>
+        </div>
+        <div class="sec-label" style="margin-top:6px">Step (mm / deg)</div>
+        <div class="step-row" id="tcp-steps">
+          <button class="step-btn" onclick="setStepTCP(1)">1</button>
+          <button class="step-btn active" onclick="setStepTCP(5)">5</button>
+          <button class="step-btn" onclick="setStepTCP(10)">10</button>
+          <button class="step-btn" onclick="setStepTCP(25)">25</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border)"/>
+
+      <!-- Joint Jog -->
+      <div class="jog-section" id="joint-jog" style="opacity:.35;pointer-events:none">
+        <div class="sec-label" style="color:var(--green)">Joint Space</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div class="joint-jog-row">
+            <span class="joint-jog-label">J1 (θ1)</span>
+            <div class="jog-grid-2" style="flex:1">
+              <button class="jbtn joint" data-axis="j1" data-dir="-1">– <span class="sub">deg</span></button>
+              <button class="jbtn joint" data-axis="j1" data-dir="1">+ <span class="sub">deg</span></button>
+            </div>
+          </div>
+          <div class="joint-jog-row">
+            <span class="joint-jog-label">J2 (θ2)</span>
+            <div class="jog-grid-2" style="flex:1">
+              <button class="jbtn joint" data-axis="j2" data-dir="-1">– <span class="sub">deg</span></button>
+              <button class="jbtn joint" data-axis="j2" data-dir="1">+ <span class="sub">deg</span></button>
+            </div>
+          </div>
+          <div class="joint-jog-row">
+            <span class="joint-jog-label">J3 (d3)</span>
+            <div class="jog-grid-2" style="flex:1">
+              <button class="jbtn joint" data-axis="j3" data-dir="-1">– <span class="sub">mm</span></button>
+              <button class="jbtn joint" data-axis="j3" data-dir="1">+ <span class="sub">mm</span></button>
+            </div>
+          </div>
+          <div class="joint-jog-row">
+            <span class="joint-jog-label">J4 (θ4)</span>
+            <div class="jog-grid-2" style="flex:1">
+              <button class="jbtn joint" data-axis="j4" data-dir="-1">– <span class="sub">deg</span></button>
+              <button class="jbtn joint" data-axis="j4" data-dir="1">+ <span class="sub">deg</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="sec-label" style="margin-top:6px">Step (deg / mm)</div>
+        <div class="step-row" id="joint-steps">
+          <button class="step-btn" onclick="setStepJoint(1)">1</button>
+          <button class="step-btn active" onclick="setStepJoint(5)">5</button>
+          <button class="step-btn" onclick="setStepJoint(10)">10</button>
+          <button class="step-btn" onclick="setStepJoint(45)">45</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CENTER: Visualization -->
+  <div class="center-col">
+    <div class="viz-wrap">
+      <canvas id="viz" width="520" height="300" style="width:100%;display:block"></canvas>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-lbl">J1</div><div class="stat-val" id="s-j1" style="color:#0066cc">0.0°</div></div>
+      <div class="stat-item"><div class="stat-lbl">J2</div><div class="stat-val" id="s-j2" style="color:#1a6b3c">0.0°</div></div>
+      <div class="stat-item"><div class="stat-lbl">J3</div><div class="stat-val" id="s-j3" style="color:#8b5a00">0.0mm</div></div>
+      <div class="stat-item"><div class="stat-lbl">J4</div><div class="stat-val" id="s-j4" style="color:#6050c0">0.0°</div></div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-lbl">X</div><div class="stat-val" id="s-x" style="color:var(--blue)">0.0</div></div>
+      <div class="stat-item"><div class="stat-lbl">Y</div><div class="stat-val" id="s-y" style="color:var(--blue)">0.0</div></div>
+      <div class="stat-item"><div class="stat-lbl">Z</div><div class="stat-val" id="s-z" style="color:var(--blue)">0.0</div></div>
+      <div class="stat-item"><div class="stat-lbl">α</div><div class="stat-val" id="s-a" style="color:var(--blue)">0.0°</div></div>
+    </div>
+    <div class="fk-box">
+      <span class="fk-title">Forward Kinematics (L1=130mm, L2=130mm)</span>
+      <span id="fk-x" style="color:var(--text2)">X = L1·cos(J1) + L2·cos(J1+J2)</span> = <span id="fk-xv" style="color:var(--blue)">—</span><br/>
+      <span id="fk-y" style="color:var(--text2)">Y = L1·sin(J1) + L2·sin(J1+J2)</span> = <span id="fk-yv" style="color:var(--blue)">—</span><br/>
+      <span style="color:var(--text2)">Z = Z_max − d3</span> = <span id="fk-zv" style="color:var(--blue)">—</span>
+    </div>
+  </div>
+
+  <!-- RIGHT: Values -->
+  <div class="right-col">
+    <div class="panel" style="overflow-y:auto">
+      <!-- TCP -->
+      <div class="val-hd"><span class="col-dot" style="background:var(--blue)"></span>TCP — Task Space</div>
+      <div class="val-section">
+        <div class="col-hdr"><span>Axis</span><span>Current</span><span>Target</span><span></span></div>
+        <div class="val-row"><span class="val-axis">X</span><div class="val-readout" id="r-x">0.00</div><input class="val-input" id="t-x" type="number" step="1" placeholder="—"/><span class="val-unit">mm</span></div>
+        <div class="val-row"><span class="val-axis">Y</span><div class="val-readout" id="r-y">0.00</div><input class="val-input" id="t-y" type="number" step="1" placeholder="—"/><span class="val-unit">mm</span></div>
+        <div class="val-row"><span class="val-axis">Z</span><div class="val-readout" id="r-z">0.00</div><input class="val-input" id="t-z" type="number" step="1" placeholder="—"/><span class="val-unit">mm</span></div>
+        <div class="val-row"><span class="val-axis">Alpha</span><div class="val-readout" id="r-a">0.00</div><input class="val-input" id="t-a" type="number" step="0.1" placeholder="—"/><span class="val-unit">deg</span></div>
+        <button class="send-btn tcp" id="send-tcp" onclick="sendTCP()">MOVE TCP →</button>
+        <div class="fb" id="fb-tcp"></div>
+      </div>
+
+      <hr class="val-divider"/>
+
+      <!-- Joints -->
+      <div class="val-hd"><span class="col-dot" style="background:var(--green)"></span>Joints — Joint Space</div>
+      <div class="val-section">
+        <div class="col-hdr"><span>Joint</span><span>Current</span><span>Target</span><span></span></div>
+
+        <div class="val-row"><span class="val-axis">J1 (θ1)</span><div class="val-readout" id="r-j1">0.00</div><input class="val-input" id="t-j1" type="number" step="0.1" placeholder="—"/><span class="val-unit">deg</span></div>
+        <div class="vel-row"><span></span><div class="vel-bar-bg"><div class="vel-bar-fill" id="vb-j1" style="background:#0066cc;width:0%"></div></div><span class="vel-val" id="vv-j1">0.0°/s</span></div>
+
+        <div class="val-row"><span class="val-axis">J2 (θ2)</span><div class="val-readout" id="r-j2">0.00</div><input class="val-input" id="t-j2" type="number" step="0.1" placeholder="—"/><span class="val-unit">deg</span></div>
+        <div class="vel-row"><span></span><div class="vel-bar-bg"><div class="vel-bar-fill" id="vb-j2" style="background:#1a6b3c;width:0%"></div></div><span class="vel-val" id="vv-j2">0.0°/s</span></div>
+
+        <div class="val-row"><span class="val-axis">J3 (d3)</span><div class="val-readout" id="r-j3">0.00</div><input class="val-input" id="t-j3" type="number" step="1" placeholder="—"/><span class="val-unit">mm</span></div>
+        <div class="vel-row"><span></span><div class="vel-bar-bg"><div class="vel-bar-fill" id="vb-j3" style="background:#8b5a00;width:0%"></div></div><span class="vel-val" id="vv-j3">0.0mm/s</span></div>
+
+        <div class="val-row"><span class="val-axis">J4 (θ4)</span><div class="val-readout" id="r-j4">0.00</div><input class="val-input" id="t-j4" type="number" step="0.1" placeholder="—"/><span class="val-unit">deg</span></div>
+        <div class="vel-row"><span></span><div class="vel-bar-bg"><div class="vel-bar-fill" id="vb-j4" style="background:#6050c0;width:0%"></div></div><span class="vel-val" id="vv-j4">0.0°/s</span></div>
+
+        <button class="send-btn joint" id="send-joint" onclick="sendJoint()">MOVE JOINTS →</button>
+        <div class="fb" id="fb-joint"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Robot constants ──────────────────────────────────────────────────────────
+const L1 = 130, L2 = 130, Z_MAX = 300, Z_MIN = 0;
+const LIMITS = { j1:[-170,170], j2:[-135,135], j3:[Z_MIN,Z_MAX], j4:[-360,360] };
+const BASE = 'http://127.0.0.1:8000';
+
+// ── Local state (used when backend is offline) ────────────────────────────
+const local = {
+  j1:30, j2:-45, j3:150, j4:0,
+  j1v:0, j2v:0, j3v:0, j4v:0,
+  estop:false, mode:'joint'
+};
+
+let backendOnline = false;
+let stepTCP = 5, stepJoint = 5;
+let mode = 'joint';
+let jogInterval = null;
+let currentJog = null;
+let wsConn = null;
+
+// ── FK / IK ──────────────────────────────────────────────────────────────────
+function fk(j1=local.j1, j2=local.j2, j3=local.j3, j4=local.j4){
+  const t1=j1*Math.PI/180, t2=j2*Math.PI/180;
+  return {
+    x: +(L1*Math.cos(t1)+L2*Math.cos(t1+t2)).toFixed(3),
+    y: +(L1*Math.sin(t1)+L2*Math.sin(t1+t2)).toFixed(3),
+    z: +(Z_MAX-j3).toFixed(3),
+    alpha: +(j1+j2+j4).toFixed(3)
+  };
+}
+
+function ik(x, y, z, alpha){
+  const d = Math.sqrt(x*x+y*y);
+  const cos2 = (d*d - L1*L1 - L2*L2)/(2*L1*L2);
+  if(Math.abs(cos2)>1) throw new Error('Target unreachable');
+  const sin2 = Math.sqrt(1-cos2*cos2);
+  const t2 = Math.atan2(sin2, cos2);
+  const k1 = L1+L2*Math.cos(t2), k2 = L2*Math.sin(t2);
+  const t1 = Math.atan2(y,x)-Math.atan2(k2,k1);
+  const j1 = clamp(t1*180/Math.PI, LIMITS.j1);
+  const j2 = clamp(t2*180/Math.PI, LIMITS.j2);
+  const j3 = clamp(Z_MAX-z, LIMITS.j3);
+  const j4 = clamp(alpha-(j1+j2), LIMITS.j4);
+  return {j1,j2,j3,j4};
+}
+
+function clamp(v,[lo,hi]){ return Math.max(lo,Math.min(hi,v)); }
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function apiPost(path, body){
+  try{
+    const r = await fetch(BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    return r.json();
+  } catch(e){ return null; }
+}
+async function apiGet(path){
+  try{ const r = await fetch(BASE+path); return r.json(); }
+  catch(e){ return null; }
+}
+
+// ── Connect to backend ────────────────────────────────────────────────────────
+async function connectBackend(){
+  const s = await apiGet('/state');
+  if(s){ backendOnline=true; applyState(s); connectWS(); setStatus(true); }
+  else { backendOnline=false; setStatus(false); }
+}
+
+function connectWS(){
+  if(wsConn) wsConn.close();
+  wsConn = new WebSocket('ws://127.0.0.1:8000/ws');
+  wsConn.onmessage = e => applyState(JSON.parse(e.data));
+  wsConn.onclose = () => { backendOnline=false; setStatus(false); setTimeout(connectBackend,3000); };
+  wsConn.onerror = () => wsConn.close();
+}
+
+function setStatus(ok){
+  const b=document.getElementById('ws-badge');
+  const l=document.getElementById('ws-label');
+  b.className='badge '+(ok?'ok':'err');
+  l.textContent=ok?'CONNECTED':'OFFLINE (LOCAL)';
+}
+
+function applyState(s){
+  if(!s) return;
+  if(s.joints){ local.j1=s.joints.j1; local.j2=s.joints.j2; local.j3=s.joints.j3; local.j4=s.joints.j4; }
+  if(s.joint_velocities){ local.j1v=s.joint_velocities.j1; local.j2v=s.joint_velocities.j2; local.j3v=s.joint_velocities.j3; local.j4v=s.joint_velocities.j4; }
+  if(s.estop !== undefined && s.estop !== local.estop){ local.estop=s.estop; updateEstopUI(); }
+  updateUI();
+}
+
+// ── UI Updates ────────────────────────────────────────────────────────────────
+function updateUI(){
+  const tcp = fk();
+  // readouts
+  const fmt = v => v.toFixed(2);
+  document.getElementById('r-x').textContent = fmt(tcp.x);
+  document.getElementById('r-y').textContent = fmt(tcp.y);
+  document.getElementById('r-z').textContent = fmt(tcp.z);
+  document.getElementById('r-a').textContent = fmt(tcp.alpha);
+  document.getElementById('r-j1').textContent = fmt(local.j1);
+  document.getElementById('r-j2').textContent = fmt(local.j2);
+  document.getElementById('r-j3').textContent = fmt(local.j3);
+  document.getElementById('r-j4').textContent = fmt(local.j4);
+  // stats
+  document.getElementById('s-j1').textContent = local.j1.toFixed(1)+'°';
+  document.getElementById('s-j2').textContent = local.j2.toFixed(1)+'°';
+  document.getElementById('s-j3').textContent = local.j3.toFixed(1)+'mm';
+  document.getElementById('s-j4').textContent = local.j4.toFixed(1)+'°';
+  document.getElementById('s-x').textContent = tcp.x.toFixed(1);
+  document.getElementById('s-y').textContent = tcp.y.toFixed(1);
+  document.getElementById('s-z').textContent = tcp.z.toFixed(1);
+  document.getElementById('s-a').textContent = tcp.alpha.toFixed(1)+'°';
+  // FK box
+  document.getElementById('fk-xv').textContent = tcp.x.toFixed(1)+' mm';
+  document.getElementById('fk-yv').textContent = tcp.y.toFixed(1)+' mm';
+  document.getElementById('fk-zv').textContent = tcp.z.toFixed(1)+' mm';
+  // velocity bars
+  ['j1','j2','j3','j4'].forEach(j=>{
+    const v = local[j+'v']||0;
+    const pct = Math.min(100,Math.abs(v)*4);
+    document.getElementById('vb-'+j).style.width=pct+'%';
+    document.getElementById('vv-'+j).textContent=v.toFixed(1)+(j==='j3'?'mm/s':'°/s');
+  });
+  drawViz();
+}
+
+function updateEstopUI(){
+  const e = local.estop;
+  document.getElementById('estop-banner').className='estop-banner'+(e?' show':'');
+  document.getElementById('estop-btn').className = e?'reset-btn':'estop-btn';
+  document.getElementById('estop-btn').textContent = e?'RESET E-STOP':'⬛ E-STOP';
+  const rb = document.getElementById('robot-badge');
+  rb.className='badge '+(e?'err':'ok');
+  document.getElementById('robot-label').textContent=e?'E-STOP':'READY';
+  document.getElementById('send-tcp').disabled=e;
+  document.getElementById('send-joint').disabled=e;
+}
+
+// ── Canvas visualization ──────────────────────────────────────────────────────
+function drawViz(){
+  const canvas = document.getElementById('viz');
+  // Responsive: fill actual display width
+  const rect = canvas.getBoundingClientRect();
+  const DPR = window.devicePixelRatio||1;
+  const W = rect.width * DPR, H = rect.height * DPR;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  const rW = rect.width, rH = rect.height;
+
+  // Scale so full workspace (radius = L1+L2) fits with 18% margin each side
+  // Centre is slightly below middle to leave room for Y+ labels
+  const maxR = L1 + L2;
+  const margin = 48; // px reserved on each side for labels/Z bar
+  const SC = (Math.min(rW, rH) - margin * 2) / (maxR * 2);
+  const CX = rW / 2, CY = rH / 2 + 10;
+
+  ctx.clearRect(0,0,rW,rH);
+  ctx.fillStyle='#f0f4f8'; ctx.fillRect(0,0,rW,rH);
+
+  // grid — spacing = 50mm in robot space
+  const gridMM = 50;
+  const gridPx = gridMM * SC;
+  ctx.strokeStyle='#d8dfe6'; ctx.lineWidth=0.5;
+  for(let i=-6;i<=6;i++){
+    const gx=CX+i*gridPx, gy=CY+i*gridPx;
+    ctx.beginPath(); ctx.moveTo(gx,10); ctx.lineTo(gx,rH-10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10,gy); ctx.lineTo(rW-10,gy); ctx.stroke();
+  }
+
+  // workspace boundary circles
+  ctx.strokeStyle='#c5d5e8'; ctx.lineWidth=1.2; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.arc(CX,CY,(L1+L2)*SC,0,2*Math.PI); ctx.stroke();
+  // inner dead-zone (L1-L2 = 0 since equal, draw minimum reachable if any)
+  const innerR = Math.abs(L1-L2)*SC;
+  if(innerR > 4){
+    ctx.beginPath(); ctx.arc(CX,CY,innerR,0,2*Math.PI); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // light fill inside workspace
+  ctx.fillStyle='rgba(200,220,240,0.10)';
+  ctx.beginPath(); ctx.arc(CX,CY,(L1+L2)*SC,0,2*Math.PI); ctx.fill();
+
+  const t1=local.j1*Math.PI/180, t2=local.j2*Math.PI/180;
+  const ex=CX+L1*Math.cos(t1)*SC, ey=CY-L1*Math.sin(t1)*SC;
+  const tx=CX+(L1*Math.cos(t1)+L2*Math.cos(t1+t2))*SC;
+  const ty=CY-(L1*Math.sin(t1)+L2*Math.sin(t1+t2))*SC;
+
+  const zFrac=1-local.j3/300;
+  const tcpColor=`hsl(${210-zFrac*50},75%,${42+zFrac*18}%)`;
+
+  // arm shadow
+  ctx.strokeStyle='rgba(0,0,0,0.07)'; ctx.lineWidth=16; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(CX,CY+3); ctx.lineTo(ex,ey+3); ctx.lineTo(tx,ty+3); ctx.stroke();
+
+  // link 1
+  ctx.strokeStyle='#3a6faa'; ctx.lineWidth=13; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(ex,ey); ctx.stroke();
+  ctx.strokeStyle='#5b9bd5'; ctx.lineWidth=7;
+  ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(ex,ey); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(ex,ey); ctx.stroke();
+
+  // link 2
+  ctx.strokeStyle='#2a5a90'; ctx.lineWidth=10; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(tx,ty); ctx.stroke();
+  ctx.strokeStyle='#4a88c0'; ctx.lineWidth=5.5;
+  ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(tx,ty); ctx.stroke();
+
+  // ── SCARA column base (top-view: concentric rings = rotary column) ──
+  // Outer mounting plate (square)
+  ctx.fillStyle='#3a4a58';
+  ctx.beginPath(); ctx.roundRect(CX-22,CY+8,44,8,2); ctx.fill();
+  // Column body (cylinder seen from top = circle)
+  ctx.fillStyle='#4a5c6e';
+  ctx.beginPath(); ctx.arc(CX,CY,18,0,2*Math.PI); ctx.fill();
+  ctx.strokeStyle='#2a3a4a'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(CX,CY,18,0,2*Math.PI); ctx.stroke();
+  // Inner column ring
+  ctx.fillStyle='#5a6e82';
+  ctx.beginPath(); ctx.arc(CX,CY,11,0,2*Math.PI); ctx.fill();
+  // J1 rotation indicator line (shows current angle)
+  ctx.strokeStyle='#8aaecc'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(CX+Math.cos(t1)*11, CY-Math.sin(t1)*11); ctx.stroke();
+  // Centre bolt
+  ctx.fillStyle='#8090a0';
+  ctx.beginPath(); ctx.arc(CX,CY,3.5,0,2*Math.PI); ctx.fill();
+  ctx.fillStyle='#c0d0de';
+  ctx.beginPath(); ctx.arc(CX,CY,1.5,0,2*Math.PI); ctx.fill();
+
+  // J1 label
+  ctx.font='bold 9px Barlow Condensed,sans-serif'; ctx.fillStyle='#6080a0'; ctx.textAlign='center';
+  ctx.fillText('J1',CX,CY+32);
+
+  // joint 2 (revolute — side view circle)
+  ctx.fillStyle='#1e3a5c'; ctx.beginPath(); ctx.arc(ex,ey,10,0,2*Math.PI); ctx.fill();
+  ctx.fillStyle='#2e5080'; ctx.beginPath(); ctx.arc(ex,ey,6.5,0,2*Math.PI); ctx.fill();
+  ctx.strokeStyle='#2a4a70'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.arc(ex,ey,10,0,2*Math.PI); ctx.stroke();
+  ctx.fillStyle='#5a80a8'; ctx.beginPath(); ctx.arc(ex,ey,3,0,2*Math.PI); ctx.fill();
+  ctx.font='bold 9px Barlow Condensed,sans-serif'; ctx.fillStyle='#4a7098'; ctx.textAlign='center';
+  ctx.fillText('J2',ex,ey-13);
+
+  // TCP end effector
+  ctx.strokeStyle=tcpColor; ctx.lineWidth=2.5; ctx.setLineDash([3,2]);
+  ctx.beginPath(); ctx.arc(tx,ty,12,0,2*Math.PI); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=tcpColor; ctx.beginPath(); ctx.arc(tx,ty,6,0,2*Math.PI); ctx.fill();
+  ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(tx,ty,2.5,0,2*Math.PI); ctx.fill();
+  ctx.strokeStyle=tcpColor; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(tx-9,ty); ctx.lineTo(tx+9,ty); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx,ty-9); ctx.lineTo(tx,ty+9); ctx.stroke();
+  ctx.font='bold 9px Barlow Condensed,sans-serif'; ctx.fillStyle='#005aab'; ctx.textAlign='left';
+  ctx.fillText('TCP',tx+14,ty-8);
+
+  // axes
+  ctx.strokeStyle='#a0aab4'; ctx.lineWidth=1;
+  const axLen = Math.min(rW,rH)*0.38;
+  ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(CX+axLen,CY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(CX,CY-axLen); ctx.stroke();
+  ctx.font='11px Barlow Condensed,sans-serif'; ctx.fillStyle='#a0aab4'; ctx.textAlign='left';
+  ctx.fillText('X',CX+axLen+4,CY+4);
+  ctx.fillText('Y',CX+4,CY-axLen-4);
+
+  // scale legend (50mm tick)
+  const legX=16, legY=rH-16;
+  ctx.strokeStyle='#8090a4'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(legX,legY); ctx.lineTo(legX+gridPx,legY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(legX,legY-4); ctx.lineTo(legX,legY+4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(legX+gridPx,legY-4); ctx.lineTo(legX+gridPx,legY+4); ctx.stroke();
+  ctx.font='9px Barlow Condensed,sans-serif'; ctx.fillStyle='#8090a4'; ctx.textAlign='center';
+  ctx.fillText('50mm',legX+gridPx/2,legY-6);
+
+  // Z depth bar
+  const bx=rW-26, by=16, bh=Math.min(rH*0.35, 90);
+  ctx.fillStyle='#dde3ea'; ctx.strokeStyle='#c5cdd6'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(bx,by,12,bh,4); ctx.fill(); ctx.stroke();
+  const filled=zFrac*bh;
+  ctx.fillStyle=tcpColor;
+  ctx.beginPath(); ctx.roundRect(bx,by+bh-filled,12,filled,3); ctx.fill();
+  ctx.font='9px Barlow Condensed,sans-serif'; ctx.fillStyle='#8090a4'; ctx.textAlign='center';
+  ctx.fillText('Z',bx+6,by-5);
+  ctx.fillText(local.j3.toFixed(0)+'mm',bx+6,by+bh+12);
+  ctx.textAlign='left';
+
+  // TCP overlay box
+  ctx.fillStyle='rgba(255,255,255,0.88)'; ctx.strokeStyle='#c8d4e0'; ctx.lineWidth=0.75;
+  ctx.beginPath(); ctx.roundRect(10,10,118,52,5); ctx.fill(); ctx.stroke();
+  ctx.font='9px Barlow Condensed,sans-serif'; ctx.fillStyle='#8090a4'; ctx.textAlign='left';
+  ctx.fillText('TCP POSITION',17,24);
+  ctx.font='10px JetBrains Mono,monospace'; ctx.fillStyle='#005aab';
+  const tcpPos=fk();
+  ctx.fillText(`X ${tcpPos.x.toFixed(1)}`,17,38);
+  ctx.fillText(`Y ${tcpPos.y.toFixed(1)}`,17,51);
+  ctx.fillText(`Z ${tcpPos.z.toFixed(1)}`,74,51);
+}
+
+// ── Mode ──────────────────────────────────────────────────────────────────────
+function setMode(m){
+  mode=m;
+  document.getElementById('btn-joint').className='mode-btn'+(m==='joint'?' active-joint':'');
+  document.getElementById('btn-tcp').className='mode-btn'+(m==='tcp'?' active-tcp':'');
+  document.getElementById('tcp-jog').style.opacity = m==='tcp'?'1':'0.35';
+  document.getElementById('tcp-jog').style.pointerEvents = m==='tcp'?'auto':'none';
+  document.getElementById('joint-jog').style.opacity = m==='joint'?'1':'0.35';
+  document.getElementById('joint-jog').style.pointerEvents = m==='joint'?'auto':'none';
+  if(backendOnline) apiPost('/mode',{mode:m});
+}
+
+// ── Jog ───────────────────────────────────────────────────────────────────────
+function startJog(axis, dir){
+  if(local.estop) return;
+  currentJog={axis,dir};
+  doJogTick();
+  jogInterval = setInterval(doJogTick, 80);
+}
+function stopJog(){
+  clearInterval(jogInterval); jogInterval=null; currentJog=null;
+  local.j1v=local.j2v=local.j3v=local.j4v=0;
+  if(backendOnline) apiPost('/jog',{axis:'j1',direction:1,active:false});
+  updateUI();
+}
+function doJogTick(){
+  if(!currentJog||local.estop){stopJog();return;}
+  const {axis,dir}=currentJog;
+  if(['j1','j2','j4'].includes(axis)){
+    local[axis]=clamp(local[axis]+dir*stepJoint, LIMITS[axis]);
+    local[axis+'v']=dir*stepJoint/0.08;
+  } else if(axis==='j3'){
+    local.j3=clamp(local.j3+dir*stepJoint, LIMITS.j3);
+    local.j3v=dir*stepJoint/0.08;
+  } else {
+    const tcp=fk();
+    tcp[axis]=(tcp[axis]||0)+dir*stepTCP;
+    try{ const r=ik(tcp.x,tcp.y,tcp.z,tcp.alpha); Object.assign(local,r); } catch(e){}
+  }
+  if(backendOnline) apiPost('/jog',{axis,direction:dir,active:true,step:axis==='j3'||['x','y','z','alpha'].includes(axis)?stepTCP:stepJoint});
+  updateUI();
+}
+
+// ── Send moves ────────────────────────────────────────────────────────────────
+async function sendTCP(){
+  if(local.estop){showFB('fb-tcp','err','E-STOP active');return;}
+  const tcp=fk();
+  const x=parseFloat(document.getElementById('t-x').value)||tcp.x;
+  const y=parseFloat(document.getElementById('t-y').value)||tcp.y;
+  const z=parseFloat(document.getElementById('t-z').value)||tcp.z;
+  const a=parseFloat(document.getElementById('t-a').value)||tcp.alpha;
+  try{
+    const r=ik(x,y,z,a);
+    Object.assign(local,r);
+    if(backendOnline){ const res=await apiPost('/move_tcp',{x,y,z,alpha:a}); if(res?.state)applyState(res.state); }
+    updateUI(); showFB('fb-tcp','ok','TCP move applied');
+  } catch(e){ showFB('fb-tcp','err',e.message); }
+}
+async function sendJoint(){
+  if(local.estop){showFB('fb-joint','err','E-STOP active');return;}
+  const body={};
+  ['j1','j2','j3','j4'].forEach(j=>{
+    const v=document.getElementById('t-'+j).value;
+    if(v!=='') body[j]=clamp(parseFloat(v),LIMITS[j]);
+  });
+  Object.assign(local,body);
+  if(backendOnline){ const res=await apiPost('/move_joint',body); if(res?.state)applyState(res.state); }
+  updateUI(); showFB('fb-joint','ok','Joint move applied');
+}
+
+function showFB(id,type,msg){
+  const el=document.getElementById(id);
+  el.className='fb '+type;
+  el.textContent=(type==='ok'?'✓ ':'✕ ')+msg;
+  setTimeout(()=>el.className='fb',2500);
+}
+
+// ── E-Stop / Home ─────────────────────────────────────────────────────────────
+async function toggleEstop(){
+  if(local.estop){
+    local.estop=false;
+    if(backendOnline) await apiPost('/estop/reset',{});
+  } else {
+    local.estop=true; stopJog();
+    if(backendOnline) await apiPost('/estop',{});
+  }
+  updateEstopUI(); updateUI();
+}
+async function doHome(){
+  if(local.estop) return;
+  local.j1=0; local.j2=0; local.j3=150; local.j4=0;
+  if(backendOnline) await apiPost('/home',{});
+  updateUI();
+}
+
+// ── Step size ─────────────────────────────────────────────────────────────────
+function setStepTCP(v){
+  stepTCP=v;
+  document.querySelectorAll('#tcp-steps .step-btn').forEach(b=>{
+    b.className='step-btn'+(parseInt(b.textContent)===v?' active':'');
+  });
+}
+function setStepJoint(v){
+  stepJoint=v;
+  document.querySelectorAll('#joint-steps .step-btn').forEach(b=>{
+    b.className='step-btn'+(parseInt(b.textContent)===v?' active':'');
+  });
+}
+
+// ── Bind jog buttons ──────────────────────────────────────────────────────────
+document.querySelectorAll('.jbtn[data-axis]').forEach(btn=>{
+  const axis=btn.dataset.axis, dir=parseInt(btn.dataset.dir);
+  btn.addEventListener('mousedown', e=>{e.preventDefault();startJog(axis,dir);});
+  btn.addEventListener('touchstart',e=>{e.preventDefault();startJog(axis,dir);},{passive:false});
+  btn.addEventListener('mouseup',   ()=>stopJog());
+  btn.addEventListener('mouseleave',()=>{if(currentJog)stopJog();});
+  btn.addEventListener('touchend',  ()=>stopJog());
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+setMode('joint');
+updateUI();
+updateEstopUI();
+connectBackend();
+setInterval(()=>{ if(!backendOnline) connectBackend(); }, 5000);
+</script>
+</body>
+</html>
