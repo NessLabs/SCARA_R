@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # ── Config ────────────────────────────────────────────────────────────
-ESP32_IP   = "10.231.7.195"   # ← change to your ESP32's IP
+ESP32_IP   = "192.168.124.195"   # ← change to your ESP32's IP 192.168.84.195
 ESP32_PORT = 5005               # UDP port on ESP32
 LISTEN_PORT = 5006              # UDP port this server listens on
 

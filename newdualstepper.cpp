@@ -27,7 +27,7 @@ static const char* TAG = "StepperTest";
 #define DT           (1.0f / CONTROL_HZ)
 
 #define TOLERANCE    2.0f
-#define DEADBAND     0.05f
+#define DEADBAND     0.5f
 
 // ─── Objects ─────────────────────────────────────────────────────────
 SimpleStepper motorJ1, motorJ2;
@@ -71,14 +71,14 @@ void controlLoop(void* arg)
         float output = pid.calc(error);
         if (output > DEADBAND)
         {
-            gpio_set_level((gpio_num_t)J1_DIR_PIN, 1);
+            gpio_set_level((gpio_num_t)J1_DIR_PIN, 0);
             gpio_set_level((gpio_num_t)J1_STEP_PIN, 1);
             esp_rom_delay_us(5);
             gpio_set_level((gpio_num_t)J1_STEP_PIN, 0);
         }
         else if (output < -DEADBAND)
         {
-            gpio_set_level((gpio_num_t)J1_DIR_PIN, 0);
+            gpio_set_level((gpio_num_t)J1_DIR_PIN, 1);
             gpio_set_level((gpio_num_t)J1_STEP_PIN, 1);
             esp_rom_delay_us(5);
             gpio_set_level((gpio_num_t)J1_STEP_PIN, 0);
@@ -155,7 +155,7 @@ extern "C" void app_main()
         ESP_LOGI(TAG, "AS5600 ready — magnet: %s", magnetStatus());
     }
 
-    float gains[3] = { 0.1f, 0.0f, 0.05f };
+    float gains[3] = { 0.1f, 0.0f, 0.005f };
     pid.setup(gains, DT, -1.0f, 1.0f);
 
     xTaskCreate(encoderTask, "encoder", 2048, NULL, 4, NULL);
@@ -169,7 +169,8 @@ extern "C" void app_main()
 
     ESP_LOGI(TAG, "=== Two Stepper Test ===");
     moveJ1(45.0f);
-    moveJ2(90.0f);
+    moveJ1(0.0f);
+
 
     ESP_LOGI(TAG, "=== Done ===");
 

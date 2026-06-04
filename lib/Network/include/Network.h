@@ -13,9 +13,15 @@
 #include "lwip/netdb.h"
 
 // ─── Config — fill these in ───────────────────────────────────────────
-#define WIFI_SSID       "S24+ de Agustin"
-#define WIFI_PASSWORD   "12345678"
-#define SERVER_IP       "10.231.7.153"  // laptop IP
+// #define WIFI_SSID       "S24+ de Agustin"
+// #define WIFI_PASSWORD   "12345678"
+//#define WIFI_SSID       "IZZI-0F89-5G"
+//#define WIFI_PASSWORD   "3Q9F0CVQGMRO"
+ #define WIFI_SSID       "S21"
+ #define WIFI_PASSWORD   "wifi4040"
+//#define WIFI_SSID       "IPhone"
+//#define WIFI_PASSWORD   "ness12345"
+#define SERVER_IP       "192.168.124.153"  // laptop IP
 #define SERVER_PORT     5006            // laptop listens on this
 #define LISTEN_PORT     5005            // ESP32 listens on this
 
